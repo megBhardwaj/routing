@@ -149,8 +149,8 @@ public class VehicleRoute {
             super();
             this.vehicle = vehicle;
             this.driver = driver;
-            start = new Start(vehicle.getStartLocation(), vehicle.getEarliestDeparture(), Double.MAX_VALUE);
-            start.setEndTime(vehicle.getEarliestDeparture());
+            start = new Start(vehicle.getStartLocation(), driver.getEarliestStart(), Double.MAX_VALUE);//vehicle.getEarliestDeparture()
+            start.setEndTime(driver.getEarliestStart());//vehicle.getEarliestDeparture()//driver.getEarliestStart()
             end = new End(vehicle.getEndLocation(), 0.0, vehicle.getLatestArrival());
         }
 

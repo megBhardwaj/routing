@@ -19,6 +19,7 @@ package com.graphhopper.jsprit.core.algorithm.recreate;
 
 import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
 import com.graphhopper.jsprit.core.problem.driver.Driver;
+import com.graphhopper.jsprit.core.problem.driver.DriverImpl;
 import com.graphhopper.jsprit.core.problem.job.Job;
 import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
 import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
@@ -27,10 +28,7 @@ import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 
 final class VehicleTypeDependentJobInsertionCalculator implements JobInsertionCostsCalculator {
@@ -38,6 +36,8 @@ final class VehicleTypeDependentJobInsertionCalculator implements JobInsertionCo
     private Logger logger = LoggerFactory.getLogger(VehicleTypeDependentJobInsertionCalculator.class);
 
     private final VehicleFleetManager fleetManager;
+
+  //  private final DriverImpl driverManager;
 
     private final JobInsertionCostsCalculator insertionCalculator;
 
@@ -56,6 +56,7 @@ final class VehicleTypeDependentJobInsertionCalculator implements JobInsertionCo
 
     public VehicleTypeDependentJobInsertionCalculator(final VehicleRoutingProblem vrp, final VehicleFleetManager fleetManager, final JobInsertionCostsCalculator jobInsertionCalc) {
         this.fleetManager = fleetManager;
+      //  this.driverManager = driverManager;
         this.insertionCalculator = jobInsertionCalc;
         this.vrp = vrp;
         getInitialVehicleIds();
@@ -109,6 +110,12 @@ final class VehicleTypeDependentJobInsertionCalculator implements JobInsertionCo
         } else { //if no vehicle has been assigned, i.e. it is an empty route
             relevantVehicles.addAll(fleetManager.getAvailableVehicles());
         }
+
+        Collection<Driver> relevantDrivers = new ArrayList<Driver>();
+
+        //for( Driver d : selectedDriver)
+       // relevantDrivers.add(selectedDriver);
+
         for (Vehicle v : relevantVehicles) {
             double depTime;
             if (v == selectedVehicle) depTime = currentRoute.getDepartureTime();
@@ -125,6 +132,8 @@ final class VehicleTypeDependentJobInsertionCalculator implements JobInsertionCo
         }
         return bestIData;
     }
+// add driver
+
 
     VehicleFleetManager getFleetManager(){
         return fleetManager;

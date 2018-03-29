@@ -26,6 +26,8 @@ import com.graphhopper.jsprit.core.problem.cost.TransportDistance;
 import com.graphhopper.jsprit.core.problem.driver.Driver;
 import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
 
+import java.io.*;
+
 
 /**
  * @author stefan schroeder
@@ -52,7 +54,78 @@ public class EuclideanCosts extends AbstractForwardVehicleRoutingTransportCosts 
         double costs = distance;
         if (vehicle != null) {
             if (vehicle.getType() != null) {
-                costs = distance * vehicle.getType().getVehicleCostParams().perDistanceUnit;
+                /*
+                if (vehicle.getId().contains("AIR")) {
+                    Integer load_factor=0;
+                    Double R=0.0;
+
+                    BufferedReader reader = null; //routing_Total_load_file_temp
+                    try {
+                        reader = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/air_fleet_master.csv")));
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    String line;
+                    boolean firstLine = true;
+                    try {
+                        while ((line = reader.readLine()) != null) {
+                            if (firstLine) {
+                                firstLine = false;
+                                continue;
+                            }
+                            String[] tokens = line.split(",");
+
+                            if(from.getCoordinate().getX()==Double.parseDouble( tokens[1]) && from.getCoordinate().getY()==Double.parseDouble( tokens[2])) {
+
+                                if (to.getCoordinate().getX() == Double.parseDouble(tokens[3]) && to.getCoordinate().getY() == Double.parseDouble(tokens[4])) {
+
+
+                                    //
+                                    R=Double.parseDouble(tokens[6]);
+
+                                    BufferedReader reader_load = null; //routing_Total_load_file_temp
+                                    try {
+                                        reader_load = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/national_72_lanes_input_with_split_on_new_capacity_v2.csv")));
+                                    } catch (FileNotFoundException e) {
+                                        e.printStackTrace();
+                                    }
+                                    String line_load;
+                                    boolean firstLine_load = true;
+                                    try {
+                                        while ((line_load = reader_load.readLine()) != null) {
+                                            if (firstLine_load) {
+                                                firstLine_load = false;
+                                                continue;
+                                            }
+                                            String[] tokens_load = line_load.split(",");
+
+                                            if (from.getCoordinate().getX() == Double.parseDouble(tokens_load[2]) && from.getCoordinate().getY() == Double.parseDouble(tokens_load[3]) && to.getCoordinate().getX() == Double.parseDouble(tokens_load[4]) && to.getCoordinate().getY() == Double.parseDouble(tokens_load[5]) && Double.parseDouble(tokens[5])>Double.parseDouble(tokens_load[8])) {
+
+                                                load_factor=Integer.parseInt( tokens_load[9]);
+                                            }
+                                        }
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                    //
+                                }
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+
+                    //get load
+
+
+                    costs=load_factor*R*1.15;
+
+                }
+                    else
+                */
+                    costs = distance * vehicle.getType().getVehicleCostParams().perDistanceUnit;
             }
         }
         return costs;

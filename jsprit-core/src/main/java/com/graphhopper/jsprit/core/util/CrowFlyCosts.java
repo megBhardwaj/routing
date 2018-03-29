@@ -26,7 +26,14 @@ import com.graphhopper.jsprit.core.problem.cost.TransportDistance;
 import com.graphhopper.jsprit.core.problem.driver.Driver;
 import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.HashMap;
 /**
  * @author stefan schroeder
  */
@@ -37,10 +44,18 @@ public class CrowFlyCosts extends AbstractForwardVehicleRoutingTransportCosts im
     public double detourFactor = 1.0;
 
     private Locations locations;
+    private Collection<Vehicle> vehicles;
 
     public CrowFlyCosts(Locations locations) {
         super();
         this.locations = locations;
+
+    }
+
+    public CrowFlyCosts(Locations locations, Collection<Vehicle> vehicles) {
+        super();
+        this.locations = locations;
+        this.vehicles = vehicles;
     }
 
     @Override
@@ -56,14 +71,83 @@ public class CrowFlyCosts extends AbstractForwardVehicleRoutingTransportCosts im
         } catch (NullPointerException e) {
             throw new NullPointerException("cannot calculate euclidean distance. coordinates are missing. either add coordinates or use another transport-cost-calculator.");
         }
+
+       // double retCost = 1000000;
+
+
         double costs = distance;
         if (vehicle != null) {
             if (vehicle.getType() != null) {
-                costs = distance * vehicle.getType().getVehicleCostParams().perDistanceUnit;
+                costs = distance * vehicle.getType().getVehicleCostParams().perDistanceUnit ;
+                    //vehicle.getType().getVehicleCostParams().fix;
             }
         }
-        return costs;
+//        try {
+//            retCost = costCal(locations.getCoord(from.getId()),locations.getCoord(to.getId()),vehicle);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return retCost;
+
+        return 1.2*costs;
+
     }
+
+    public static double costCal(Coordinate coord1, Coordinate coord2, Vehicle vehicleNew) throws IOException{
+
+//        BufferedReader reader1 = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/Load _file_for_transport_routing.csv"))); //routing_Total_load_file_temp
+//        String line1;
+//        boolean firstLine1 = true;
+//
+//        // HashMap<String,Location> vehicleMapE = new HashMap<>();
+//
+//        while ((line1 = reader1.readLine()) != null) {
+//            if (firstLine1) {
+//                firstLine1 = false;
+//                continue;
+//            }
+//            String[] tokens1 = line1.split(",");
+//            HashMap<Location,> vehicleMapE = new HashMap<>();
+
+    BufferedReader reader = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/Lane_Master_air_surface.csv")));
+    String line;
+    boolean firstLine = true;
+
+    double lat1 = coord1.getX();
+    double lng1 = coord1.getY();
+    double lat2 = coord2.getX();
+    double lng2 = coord2.getY();
+
+    double retCost = 1000000000;
+
+        String fleetNew = "22";
+            //vehicleNew.getType().getProfile();
+
+    while((line=reader.readLine())!=null)
+
+    {
+        if (firstLine) {
+            firstLine = false;
+            continue;
+        }
+        String[] tokens = line.split(",");
+        if (tokens[4] == null || tokens[5] == null || tokens[6] == null || tokens[7] == null)
+            retCost = Double.MAX_VALUE;
+        else if (lat1 == Double.parseDouble(tokens[4]) && lng1 == Double.parseDouble(tokens[5]) && lat2 == Double.parseDouble(tokens[6]) && lng2 == Double.parseDouble(tokens[7]) ) {
+            if(tokens[0].equals("Surface") && fleetNew.trim().equals(tokens[2].trim())){
+                retCost = Double.parseDouble(tokens[3]);
+            }
+
+            else
+                retCost = Double.parseDouble(tokens[3])*100000;
+        }
+    }
+
+    reader.close();
+
+        return retCost;
+}
 
     private double calculateDistance(Location fromLocation, Location toLocation) {
         Coordinate from = null;
@@ -91,7 +175,7 @@ public class CrowFlyCosts extends AbstractForwardVehicleRoutingTransportCosts im
         } catch (NullPointerException e) {
             throw new NullPointerException("cannot calculate euclidean distance. coordinates are missing. either add coordinates or use another transport-cost-calculator.");
         }
-        return distance / speed;
+        return distance / vehicle.getType().getMaxVelocity();
     }
 
     @Override

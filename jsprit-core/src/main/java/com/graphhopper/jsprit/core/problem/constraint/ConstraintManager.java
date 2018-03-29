@@ -62,6 +62,8 @@ public class ConstraintManager implements HardActivityConstraint, HardRouteConst
 
     private boolean skillconstraintSet = false;
 
+//    private boolean dgFlagSet = false;
+
     private final DependencyType[] dependencyTypes;
 
     public ConstraintManager(VehicleRoutingProblem vrp, RouteAndActivityStateGetter stateManager) {
@@ -164,6 +166,12 @@ public class ConstraintManager implements HardActivityConstraint, HardRouteConst
             skillconstraintSet = true;
         }
     }
+
+//    public void addDgFlagConstraint(){
+//        if(!dgFlagSet){
+//            addConstraint(
+//        }
+//    }
 
 //	public void add
 

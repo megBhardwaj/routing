@@ -17,8 +17,15 @@
  */
 package com.graphhopper.jsprit.core.problem.driver;
 
+import com.graphhopper.jsprit.core.problem.Location;
+
 public interface Driver {
 
     public String getId();
+
+    public double getEarliestStart();
+
+    public Location getStartLocationLatLong();
+
 
 }

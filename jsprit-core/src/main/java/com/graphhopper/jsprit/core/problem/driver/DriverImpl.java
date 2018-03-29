@@ -17,6 +17,8 @@
  */
 package com.graphhopper.jsprit.core.problem.driver;
 
+import com.graphhopper.jsprit.core.problem.Location;
+
 public class DriverImpl implements Driver {
 
     public static NoDriver noDriver() {
@@ -35,6 +37,8 @@ public class DriverImpl implements Driver {
 
     private double earliestStart = 0.0;
 
+    private Location startLocation ;
+
     private double latestEnd = Double.MAX_VALUE;
 
     private String home;
@@ -48,6 +52,69 @@ public class DriverImpl implements Driver {
         return id;
     }
 
+
+
+    public static class Builder{
+
+        private String id;
+
+        private double earliestStart = 0.0;
+
+        private Location startLocation ;
+
+        private double latestEnd = Double.MAX_VALUE;
+
+        private String home;
+
+        private Builder(String id) {
+            super();
+            this.id = id;
+        }
+
+        public Builder setEarliestStart(double earliestStart) {
+            this.earliestStart = earliestStart;
+            return this;
+        }
+
+        public Builder setStartLocation(Location startLocation) {
+            this.startLocation = startLocation;
+            return this;
+        }
+
+        public Builder setLatestEnd(double latestEnd) {
+            this.latestEnd = latestEnd;
+            return this;
+        }
+
+        public DriverImpl build(){
+
+            if(startLocation == null ){
+                throw new IllegalArgumentException("vehicle requires startLocation. but neither locationId nor locationCoord nor startLocationId nor startLocationCoord has been set");
+
+            }
+
+            return new DriverImpl(this);
+        }
+
+        public static Builder newInstance(String driverId){return new Builder(driverId);}
+
+
+    }
+
+    private DriverImpl(Builder builder) {
+
+        id = builder.id ;
+        startLocation = builder.startLocation;
+        latestEnd = builder.latestEnd;
+        earliestStart = builder.earliestStart;
+
+    }
+
+   // public Driver getAvailableDrivers()
+
+
+
+    @Override
     public double getEarliestStart() {
         return earliestStart;
     }
@@ -55,6 +122,7 @@ public class DriverImpl implements Driver {
     public void setEarliestStart(double earliestStart) {
         this.earliestStart = earliestStart;
     }
+
 
     public double getLatestEnd() {
         return latestEnd;
@@ -68,8 +136,14 @@ public class DriverImpl implements Driver {
         this.home = locationId;
     }
 
+
     public String getHomeLocation() {
         return this.home;
     }
+
+    public void setStartLocation(Location startLocation) {this.startLocation = startLocation;}
+
+    @Override
+    public Location getStartLocationLatLong() { return  startLocation;}
 
 }

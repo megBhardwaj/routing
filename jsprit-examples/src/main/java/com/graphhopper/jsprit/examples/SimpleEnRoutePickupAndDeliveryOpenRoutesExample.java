@@ -49,17 +49,54 @@ public class SimpleEnRoutePickupAndDeliveryOpenRoutesExample {
 		/*
          * get a vehicle type-builder and build a type with the typeId "vehicleType" and a capacity of 2
 		 */
-        VehicleTypeImpl.Builder vehicleTypeBuilder = VehicleTypeImpl.Builder.newInstance("vehicleType").addCapacityDimension(0, 2);
+        VehicleTypeImpl.Builder vehicleTypeBuilder = VehicleTypeImpl.Builder.newInstance("vehicleType").addCapacityDimension(0, 3).setCostPerDistance(10);
         VehicleType vehicleType = vehicleTypeBuilder.build();
 
 		/*
          * get a vehicle-builder and build a vehicle located at (10,10) with type "vehicleType"
 		 */
-        Builder vehicleBuilder = VehicleImpl.Builder.newInstance("vehicle");
-        vehicleBuilder.setStartLocation(loc(Coordinate.newInstance(10, 10)));
+        Builder vehicleBuilder = VehicleImpl.Builder.newInstance("vehicle1");
+        vehicleBuilder.setStartLocation(loc(Coordinate.newInstance(5, 9)));
         vehicleBuilder.setType(vehicleType);
-        vehicleBuilder.setReturnToDepot(false);
-        VehicleImpl vehicle = vehicleBuilder.build();
+        vehicleBuilder.setReturnToDepot(true);
+        VehicleImpl vehicle1 = vehicleBuilder.build();
+
+        VehicleTypeImpl.Builder vehicleTypeBuilder1 = VehicleTypeImpl.Builder.newInstance("vehicleType").addCapacityDimension(0, 1).setCostPerDistance(1);
+        VehicleType vehicleType1 = vehicleTypeBuilder1.build();
+
+		/*
+         * get a vehicle-builder and build a vehicle located at (10,10) with type "vehicleType"
+		 */
+        Builder vehicleBuilder1 = VehicleImpl.Builder.newInstance("vehicle2");
+        vehicleBuilder1.setStartLocation(loc(Coordinate.newInstance(15, 13)));
+        vehicleBuilder1.setType(vehicleType1);
+        vehicleBuilder1.setReturnToDepot(true);
+        VehicleImpl vehicle2 = vehicleBuilder1.build();
+
+        VehicleTypeImpl.Builder vehicleTypeBuilder3 = VehicleTypeImpl.Builder.newInstance("vehicleType").addCapacityDimension(0, 1).setCostPerDistance(1);
+        VehicleType vehicleType3 = vehicleTypeBuilder3.build();
+
+		/*
+         * get a vehicle-builder and build a vehicle located at (10,10) with type "vehicleType"
+		 */
+        Builder vehicleBuilder3 = VehicleImpl.Builder.newInstance("vehicle3");
+        vehicleBuilder3.setStartLocation(loc(Coordinate.newInstance(5, 7)));
+        vehicleBuilder3.setType(vehicleType3);
+        vehicleBuilder3.setReturnToDepot(true);
+        VehicleImpl vehicle3 = vehicleBuilder3.build();
+
+        VehicleTypeImpl.Builder vehicleTypeBuilder4 = VehicleTypeImpl.Builder.newInstance("vehicleType").addCapacityDimension(0, 1).setCostPerDistance(1);
+        VehicleType vehicleType4 = vehicleTypeBuilder4.build();
+
+		/*
+         * get a vehicle-builder and build a vehicle located at (10,10) with type "vehicleType"
+		 */
+        Builder vehicleBuilder4 = VehicleImpl.Builder.newInstance("vehicle4");
+        vehicleBuilder4.setStartLocation(loc(Coordinate.newInstance(6, 7)));
+        vehicleBuilder4.setType(vehicleType4);
+        vehicleBuilder4.setReturnToDepot(true);
+        VehicleImpl vehicle4 = vehicleBuilder4.build();
+
 
 		/*
          * build shipments at the required locations, each with a capacity-demand of 1.
@@ -71,14 +108,14 @@ public class SimpleEnRoutePickupAndDeliveryOpenRoutesExample {
 		 */
 
         Shipment shipment1 = Shipment.Builder.newInstance("1").addSizeDimension(0, 1).setPickupLocation(loc(Coordinate.newInstance(5, 7))).setDeliveryLocation(loc(Coordinate.newInstance(6, 9))).build();
-        Shipment shipment2 = Shipment.Builder.newInstance("2").addSizeDimension(0, 1).setPickupLocation(loc(Coordinate.newInstance(5, 13))).setDeliveryLocation(loc(Coordinate.newInstance(6, 11))).build();
+        Shipment shipment2 = Shipment.Builder.newInstance("2").addSizeDimension(0, 1).setPickupLocation(loc(Coordinate.newInstance(5, 9))).setDeliveryLocation(loc(Coordinate.newInstance(6, 9))).build();
 
-        Shipment shipment3 = Shipment.Builder.newInstance("3").addSizeDimension(0, 1).setPickupLocation(loc(Coordinate.newInstance(15, 7))).setDeliveryLocation(loc(Coordinate.newInstance(14, 9))).build();
-        Shipment shipment4 = Shipment.Builder.newInstance("4").addSizeDimension(0, 1).setPickupLocation(loc(Coordinate.newInstance(15, 13))).setDeliveryLocation(loc(Coordinate.newInstance(14, 11))).build();
+        Shipment shipment3 = Shipment.Builder.newInstance("3").addSizeDimension(0, 1).setPickupLocation(loc(Coordinate.newInstance(6, 7))).setDeliveryLocation(loc(Coordinate.newInstance(6, 9))).build();
+        Shipment shipment4 = Shipment.Builder.newInstance("4").addSizeDimension(0, 1).setPickupLocation(loc(Coordinate.newInstance(15, 13))).setDeliveryLocation(loc(Coordinate.newInstance(6, 9))).build();
 
 
         VehicleRoutingProblem.Builder vrpBuilder = VehicleRoutingProblem.Builder.newInstance();
-        vrpBuilder.addVehicle(vehicle);
+        vrpBuilder.addVehicle(vehicle2).addVehicle(vehicle1).addVehicle(vehicle3).addVehicle(vehicle4);
         vrpBuilder.addJob(shipment1).addJob(shipment2).addJob(shipment3).addJob(shipment4);
 
         VehicleRoutingProblem problem = vrpBuilder.build();

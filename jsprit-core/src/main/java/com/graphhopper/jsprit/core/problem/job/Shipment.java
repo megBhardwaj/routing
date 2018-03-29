@@ -87,6 +87,8 @@ public class Shipment extends AbstractJob {
 
         private TimeWindowsImpl pickupTimeWindows;
 
+        private boolean dgFlag = false;
+
         private int priority = 2;
 
         /**
@@ -197,6 +199,11 @@ public class Shipment extends AbstractJob {
             this.deliveryTimeWindows.add(timeWindow);
             return this;
         }
+
+//        public Builder setDgFlag(boolean dgFlag1){
+//            this.dgFlag = dgFlag1;
+//            return this;
+//        }
 
         /**
          * Adds capacity dimension.
@@ -349,6 +356,8 @@ public class Shipment extends AbstractJob {
     public Location getDeliveryLocation() {
         return deliveryLocation_;
     }
+
+   // public boolean getDgFlag() {return dgFlag()
 
     /**
      * Returns service-time of delivery.

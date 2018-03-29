@@ -17,12 +17,15 @@
  */
 package com.graphhopper.jsprit.examples;
 
+
 import com.graphhopper.jsprit.analysis.toolbox.AlgorithmSearchProgressChartListener;
 import com.graphhopper.jsprit.analysis.toolbox.GraphStreamViewer;
 import com.graphhopper.jsprit.analysis.toolbox.GraphStreamViewer.Label;
 import com.graphhopper.jsprit.analysis.toolbox.Plotter;
 import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
 import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
+import com.graphhopper.jsprit.core.algorithm.recreate.IncreasingAbsoluteFixedCosts;
+import com.graphhopper.jsprit.core.algorithm.state.InternalStates;
 import com.graphhopper.jsprit.core.algorithm.state.StateId;
 import com.graphhopper.jsprit.core.algorithm.state.StateManager;
 import com.graphhopper.jsprit.core.algorithm.state.StateUpdater;
@@ -34,6 +37,7 @@ import com.graphhopper.jsprit.core.problem.constraint.ConstraintManager;
 import com.graphhopper.jsprit.core.problem.constraint.HardActivityConstraint;
 import com.graphhopper.jsprit.core.problem.constraint.HardRouteConstraint;
 import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
+import com.graphhopper.jsprit.core.problem.driver.Driver;
 import com.graphhopper.jsprit.core.problem.driver.DriverImpl;
 import com.graphhopper.jsprit.core.problem.job.Job;
 import com.graphhopper.jsprit.core.problem.job.Shipment;
@@ -41,6 +45,7 @@ import com.graphhopper.jsprit.core.problem.misc.JobInsertionContext;
 import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.ReverseActivityVisitor;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TimeWindow;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity.JobActivity;
 import com.graphhopper.jsprit.core.problem.solution.route.state.RouteAndActivityStateGetter;
@@ -53,6 +58,10 @@ import com.graphhopper.jsprit.core.util.Coordinate;
 import com.graphhopper.jsprit.core.util.CrowFlyCosts;
 import com.graphhopper.jsprit.core.util.Solutions;
 import com.graphhopper.jsprit.util.Examples;
+import jdk.nashorn.internal.objects.annotations.Getter;
+import jdk.nashorn.internal.objects.annotations.Setter;
+import scala.Int;
+import scala.util.parsing.combinator.testing.Str;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -61,6 +70,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.StringTokenizer;
 
 
 /**
@@ -121,7 +135,7 @@ public class BicycleMessenger {
             //local impact
             //no matter whether it is a pickupShipment or deliverShipment activities. both arrivalTimes must be < 3*best.
             double directTimeOfNearestMessenger = bestMessengers.get(((JobActivity) newAct).getJob().getId());
-            if (arrTime_at_newAct > 3 * directTimeOfNearestMessenger) {
+            if (arrTime_at_newAct > 10000000 * directTimeOfNearestMessenger) {
                 //not fulfilled AND it can never be fulfilled anymore by going forward in route, thus NOT_FULFILLED_BREAK
                 return ConstraintsStatus.NOT_FULFILLED_BREAK;
             }
@@ -166,7 +180,7 @@ public class BicycleMessenger {
         public boolean fulfilled(JobInsertionContext insertionContext) {
             double timeOfDirectRoute = getTimeOfDirectRoute(insertionContext.getJob(), insertionContext.getNewVehicle(), routingCosts);
             double timeOfNearestMessenger = bestMessengers.get(insertionContext.getJob().getId());
-            return !(timeOfDirectRoute > 3 * timeOfNearestMessenger);
+            return !(timeOfDirectRoute > 50 * timeOfNearestMessenger);
         }
 
     }
@@ -215,7 +229,7 @@ public class BicycleMessenger {
             double timeOfNearestMessenger = bestMessengers.get(((JobActivity) currAct).getJob().getId());
             double potential_latest_arrTime_at_currAct =
                 latest_arrTime_at_prevAct - routingCosts.getBackwardTransportTime(currAct.getLocation(), prevAct.getLocation(), latest_arrTime_at_prevAct, route.getDriver(), route.getVehicle()) - currAct.getOperationTime();
-            double latest_arrTime_at_currAct = Math.min(3 * timeOfNearestMessenger, potential_latest_arrTime_at_currAct);
+            double latest_arrTime_at_currAct = Math.min(10000000 * timeOfNearestMessenger, potential_latest_arrTime_at_currAct);
             stateManager.putActivityState(currAct, latest_act_arrival_time_stateId, latest_arrTime_at_currAct);
             assert currAct.getArrTime() <= latest_arrTime_at_currAct : "this must not be since it breaks condition; actArrTime: " + currAct.getArrTime() + " latestArrTime: " + latest_arrTime_at_currAct + " vehicle: " + route.getVehicle().getId();
             latest_arrTime_at_prevAct = latest_arrTime_at_currAct;
@@ -241,8 +255,12 @@ public class BicycleMessenger {
         problemBuilder.setFleetSize(FleetSize.FINITE);
         readEnvelopes(problemBuilder);
         readMessengers(problemBuilder);
+        //readDrivers(problemBuilder);
         //add constraints to problem
         VehicleRoutingTransportCosts routingCosts = new CrowFlyCosts(problemBuilder.getLocations()); //which is the default VehicleRoutingTransportCosts in builder above
+
+       // VehicleRoutingTransportCosts routeCost = ;
+      //  routeCost.getTransportCost(problemBuilder.getLocations(),problemBuilder.getLocations(),0.0,null,problemBuilder.getAddedVehicles());
         problemBuilder.setRoutingCost(routingCosts);
         //finally build the problem
 //        problemBuilder.addPenaltyVehicles(20.0,50000);
@@ -264,13 +282,13 @@ public class BicycleMessenger {
 
         ConstraintManager constraintManager = new ConstraintManager(bicycleMessengerProblem, stateManager);
         constraintManager.addLoadConstraint();
-        constraintManager.addConstraint(new ThreeTimesLessThanBestDirectRouteConstraint(latest_act_arrival_time_stateId, nearestMessengers, routingCosts, stateManager), ConstraintManager.Priority.CRITICAL);
+        //constraintManager.addConstraint(new ThreeTimesLessThanBestDirectRouteConstraint(latest_act_arrival_time_stateId, nearestMessengers, routingCosts, stateManager), ConstraintManager.Priority.CRITICAL);
         constraintManager.addConstraint(new IgnoreMessengerThatCanNeverMeetTimeRequirements(nearestMessengers, routingCosts));
 
         VehicleRoutingAlgorithm algorithm = Jsprit.Builder.newInstance(bicycleMessengerProblem)
             .setStateAndConstraintManager(stateManager,constraintManager).buildAlgorithm();
 
-        algorithm.setMaxIterations(2000);
+        algorithm.setMaxIterations(100);
 
 //		VehicleRoutingAlgorithm algorithm = Jsprit.Builder.newInstance(bicycleMessengerProblem)
 //				.setStateAndConstraintManager(stateManager, constraintManager)
@@ -291,11 +309,12 @@ public class BicycleMessenger {
 //        algorithm.addListener(prematureAlgorithmTermination);
         algorithm.addListener(new AlgorithmSearchProgressChartListener("output/progress.png"));
 
+
         //search
         Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
 
         //this is just to ensure that solution meet the above constraints
-        validateSolution(Solutions.bestOf(solutions), bicycleMessengerProblem, nearestMessengers);
+  //      validateSolution(Solutions.bestOf(solutions), bicycleMessengerProblem, nearestMessengers);
 
         SolutionPrinter.print(bicycleMessengerProblem, Solutions.bestOf(solutions), SolutionPrinter.Print.VERBOSE);
 
@@ -326,9 +345,9 @@ public class BicycleMessenger {
     private static void validateSolution(VehicleRoutingProblemSolution bestOf, VehicleRoutingProblem bicycleMessengerProblem, Map<String, Double> nearestMessengers) {
         for (VehicleRoute route : bestOf.getRoutes()) {
             for (TourActivity act : route.getActivities()) {
-                if (act.getArrTime() > 3 * nearestMessengers.get(((JobActivity) act).getJob().getId())) {
+                if (act.getArrTime() > 100 * nearestMessengers.get(((JobActivity) act).getJob().getId())) {
                     SolutionPrinter.print(bicycleMessengerProblem, bestOf, SolutionPrinter.Print.VERBOSE);
-                    throw new IllegalStateException("three times less than ... constraint broken. this must not be. act.getArrTime(): " + act.getArrTime() + " allowed: " + 3 * nearestMessengers.get(((JobActivity) act).getJob().getId()));
+                    throw new IllegalStateException("three times less than ... constraint broken. this must not be. act.getArrTime(): " + act.getArrTime() + " allowed: " + 6 * nearestMessengers.get(((JobActivity) act).getJob().getId()));
                 }
             }
         }
@@ -355,49 +374,284 @@ public class BicycleMessenger {
             routingCosts.getTransportTime(envelope.getPickupLocation(), envelope.getDeliveryLocation(), 0.0, DriverImpl.noDriver(), v);
     }
 
+    static HashMap<String,Location> vehicleMap = new HashMap<>();
+    //Location vehicleStartLocation = Location.newInstance(0,0);
+
     private static void readEnvelopes(Builder problemBuilder) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(new File("input/bicycle_messenger_demand.txt")));
+        BufferedReader reader = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/nat_s3.csv"))); //AMD_Zonal_input_agrr_t1//routing_Total_load_file_temp//load_input_with_reduced_hops_for_routing//load_input_with_reduced_hops_for_routing_load_split//national_72_lanes_input_with_split_on_new_capacity_v2//NAT_input_v1//nat_march_s1
         String line;
         boolean firstLine = true;
+
+       // HashMap<String,Location> vehicleMapE = new HashMap<>();
+
         while ((line = reader.readLine()) != null) {
             if (firstLine) {
                 firstLine = false;
                 continue;
             }
-            String[] tokens = line.split("\\s+");
+            String[] tokens = line.split(",");
+            TimeWindow tw = new TimeWindow(0,432000); //Double.parseDouble(tokens[10])
             //define your envelope which is basically a shipment from A to B
-            Shipment envelope = Shipment.Builder.newInstance(tokens[1]).addSizeDimension(0, 1)
+            Shipment envelope = Shipment.Builder.newInstance(tokens[1]).addSizeDimension(0,Integer.parseInt(tokens[9]))
+                //.setDeliveryTimeWindow(tw)
+                //.setDgFlag(Boolean.parseBoolean(tokens[1]))
+                .addPickupTimeWindow(Double.parseDouble(tokens[8]),Double.parseDouble(tokens[10]))//Double.parseDouble(tokens[8]),172800-Double.parseDouble( tokens[8])//Double.parseDouble(tokens[8])+54000
+                .addDeliveryTimeWindow(Double.parseDouble(tokens[8]),Double.parseDouble(tokens[10]))//201600//Double.parseDouble(tokens[8])+54000
+                .setPriority(1)
+                .setDeliveryServiceTime(2700)//900+((Double.parseDouble(tokens[9])/(20*8))*60))
+                .setPickupServiceTime(300+((Double.parseDouble(tokens[9])/(20*8))*60))
                 .setPickupLocation(Location.Builder.newInstance().setCoordinate(Coordinate.newInstance(Double.parseDouble(tokens[2]), Double.parseDouble(tokens[3]))).build())
                 .setDeliveryLocation(Location.Builder.newInstance().setCoordinate(Coordinate.newInstance(Double.parseDouble(tokens[4]), Double.parseDouble(tokens[5]))).build()).build();
             problemBuilder.addJob(envelope);
+
+
+            if(vehicleMap.get(tokens[6])==null)
+            vehicleMap.put(tokens[6],Location.Builder.newInstance().setCoordinate(Coordinate.newInstance(Double.parseDouble(tokens[2]), Double.parseDouble(tokens[3]))).build());
+
         }
         reader.close();
+
+
+    }
+
+    private static void  readDrivers(Builder problemBuilder) throws IOException {
+
+        BufferedReader reader = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/drivers.csv"))); //AMD_Zonal_input_agrr_t1//routing_Total_load_file_temp//load_input_with_reduced_hops_for_routing//load_input_with_reduced_hops_for_routing_load_split//national_72_lanes_input_with_split_on_new_capacity_v2
+        String line;
+        boolean firstLine = true;
+
+        // HashMap<String,Location> vehicleMapE = new HashMap<>();
+
+        while ((line = reader.readLine()) != null) {
+            if (firstLine) {
+                firstLine = false;
+                continue;
+            }
+            String[] tokens = line.split(",");
+
+
+            Driver driver = DriverImpl.Builder.newInstance(tokens[0]).setStartLocation(Location.Builder.newInstance().setCoordinate(Coordinate.newInstance(Double.parseDouble(tokens[2]), Double.parseDouble(tokens[3]))).build())
+                            .setEarliestStart(Double.parseDouble(tokens[4])).build();
+
+
+            problemBuilder.addDriver(driver);
+        }
     }
 
     private static void readMessengers(Builder problemBuilder) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(new File("input/bicycle_messenger_supply.txt")));
-        String line;
-        boolean firstLine = true;
-        VehicleType messengerType = VehicleTypeImpl.Builder.newInstance("messengerType").addCapacityDimension(0, 15).setCostPerDistance(1).build();
+//        BufferedReader reader = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/fleet_master_file.csv")));
+//        String line;
+//        boolean firstLine = true;
+       // VehicleType messengerType = VehicleTypeImpl.Builder.newInstance("messengerType").addCapacityDimension(0, 6).setCostPerDistance(1).build();
         /*
          * the algo requires some time and space to search for a valid solution. if you ommit a penalty-type, it probably throws an Exception once it cannot insert an envelope anymore
 		 * thus, give it space by defining a penalty/shadow vehicle with higher variable and fixed costs to up the pressure to find solutions without penalty type
 		 *
 		 * it is important to give it the same typeId as the type you want to shadow
 		 */
-        while ((line = reader.readLine()) != null) {
-            if (firstLine) {
-                firstLine = false;
+
+
+        class vehicleTemp{
+            String vehicleTemp;
+            Double CapacityTemp;
+            Double tollFactor;
+            Double extFactor;
+            Integer containerFactor;
+            Integer vehicleCost;
+            Integer interest;
+            Integer loanPeriod;
+            Integer coolingTimeFactor;
+            Integer amc;
+            Integer insurance;
+            Integer desielPrice;
+            Integer milage;
+            Integer speed;
+            Integer coolingTime;
+            Integer driverCost;
+            Integer kmPerTyre;
+            Integer costOfTyre;
+            Integer noOfTyre;
+            Integer repairCharge;
+
+        }
+/*
+
+        BufferedReader reader1 = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/drivers.csv"))); //routing_Total_load_file_temp//trans_40//cost_eq_new_capacity_v2_nat_32_24
+        String line1;
+        boolean firstLine1 = true;
+        while ((line1 = reader1.readLine()) != null) {
+            if (firstLine1) {
+                firstLine1 = false;
                 continue;
             }
-            String[] tokens = line.split("\\s+");
-            //build your vehicle
-            VehicleImpl vehicle = VehicleImpl.Builder.newInstance(tokens[1])
-                .setStartLocation(Location.Builder.newInstance().setCoordinate(Coordinate.newInstance(Double.parseDouble(tokens[2]), Double.parseDouble(tokens[3]))).build())
-                .setReturnToDepot(false).setType(messengerType).build();
+
+            String[] tokens1 = line1.split(",");
+
+            VehicleType messengerType = VehicleTypeImpl.Builder.newInstance(tokens1[8])
+                .addCapacityDimension(0, Integer.parseInt(tokens1[7]))
+                .setMaxVelocity(Double.parseDouble(tokens1[9]))
+                .setCostPerServiceTime(0)
+                .setCostPerDistance(Double.parseDouble(tokens1[8]))//vehiclePerDistCost(60,Integer.parseInt(tokens[1]),Integer.parseInt(tokens[2]),80, Integer.parseInt(tokens[3]),Integer.parseInt(tokens[4]),Integer.parseInt(tokens[5]),Integer.parseInt(tokens[6]),Integer.parseInt(tokens[7]),Integer.parseInt(tokens[8]),Integer.parseInt(tokens[9]),Integer.parseInt(tokens[10]),Integer.parseInt(tokens[11]),Integer.parseInt(tokens[12]))) //
+                .setFixedCost(0)
+                .setCostPerTransportTime(0)
+                .setCostPerWaitingTime(0)
+                .build();
+
+            VehicleImpl vehicle = VehicleImpl.Builder.newInstance(tokens1[0])  //i + "-" + keyTemp.toString() + "-" +
+                //  .setLatestArrival(72*3600)
+                .setStartLocation(vehicleMap.get(Location.Builder.newInstance().setCoordinate(Coordinate.newInstance(Double.parseDouble(tokens1[2]), Double.parseDouble(tokens1[3]))).build()))   //vehicleMap.get(keyTemp)//Location.Builder.newInstance().setCoordinate(Coordinate.newInstance(Double.parseDouble(tokens[2]), Double.parseDouble(tokens[3]))).build()
+                .setEarliestStart(Double.parseDouble(tokens1[4]))
+                .setReturnToDepot(false)
+                .setType(messengerType)
+                .build();
+
             problemBuilder.addVehicle(vehicle);
         }
-        reader.close();
+
+*/
+
+
+
+        for(Object keyTemp : vehicleMap.keySet()){
+
+
+            //int i; i=0;
+            BufferedReader reader = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/cost_eq_new_capacity_v2_nat_32_24.csv"))); //routing_Total_load_file_temp//trans_40//cost_eq_new_capacity_v2_nat_32_24
+            String line;
+            boolean firstLine = true;
+            while ((line = reader.readLine()) != null) {
+                if (firstLine) {
+                    firstLine = false;
+                    continue;
+                }
+
+
+                String[] tokens = line.split(",");
+                for(int i=0;i<40;i++) {                //i<10
+
+                    VehicleType messengerType = VehicleTypeImpl.Builder.newInstance(tokens[0])
+                        .addCapacityDimension(0, Integer.parseInt(tokens[13]))
+                        .setMaxVelocity(Double.parseDouble(tokens[2]))
+                        .setCostPerServiceTime(0)
+                        .setCostPerDistance(Double.parseDouble(tokens[14]))//vehiclePerDistCost(60,Integer.parseInt(tokens[1]),Integer.parseInt(tokens[2]),80, Integer.parseInt(tokens[3]),Integer.parseInt(tokens[4]),Integer.parseInt(tokens[5]),Integer.parseInt(tokens[6]),Integer.parseInt(tokens[7]),Integer.parseInt(tokens[8]),Integer.parseInt(tokens[9]),Integer.parseInt(tokens[10]),Integer.parseInt(tokens[11]),Integer.parseInt(tokens[12]))) //
+                        .setFixedCost(0)
+                        .setCostPerTransportTime(0)
+                        .setCostPerWaitingTime(0)
+                        .build();
+
+                    VehicleImpl vehicle = VehicleImpl.Builder.newInstance(i + "-" + keyTemp.toString() + "-" + tokens[0])  //i + "-" + keyTemp.toString() + "-" +
+                      //  .setLatestArrival(72*3600)
+                        .setStartLocation(vehicleMap.get(keyTemp))   //vehicleMap.get(keyTemp)//Location.Builder.newInstance().setCoordinate(Coordinate.newInstance(Double.parseDouble(tokens[2]), Double.parseDouble(tokens[3]))).build()
+                       // .setEarliestStart(Double.parseDouble(tokens[4]))
+                        .setReturnToDepot(false)
+                        .setType(messengerType)
+                        .build();
+
+                    problemBuilder.addVehicle(vehicle);
+
+                    //i++;
+
+                }
+
+
+//                for(int i=5;i<10;i++) {                //i<10
+//
+//                    VehicleType messengerType = VehicleTypeImpl.Builder.newInstance(tokens[0])
+//                        .addCapacityDimension(0, Integer.parseInt(tokens[15]))
+//                        .setMaxVelocity(Double.parseDouble(tokens[2]))
+//                        .setCostPerServiceTime(0)
+//                        .setCostPerDistance(Double.parseDouble(tokens[14]))//vehiclePerDistCost(60,Integer.parseInt(tokens[1]),Integer.parseInt(tokens[2]),80, Integer.parseInt(tokens[3]),Integer.parseInt(tokens[4]),Integer.parseInt(tokens[5]),Integer.parseInt(tokens[6]),Integer.parseInt(tokens[7]),Integer.parseInt(tokens[8]),Integer.parseInt(tokens[9]),Integer.parseInt(tokens[10]),Integer.parseInt(tokens[11]),Integer.parseInt(tokens[12]))) //
+//                        .setFixedCost(0)
+//                        .setCostPerTransportTime(0)
+//                        .setCostPerWaitingTime(0)
+//                        .build();
+//
+//                    VehicleImpl vehicle = VehicleImpl.Builder.newInstance( i + "-" + keyTemp.toString() + "-" + tokens[0])
+//                        //  .setLatestArrival(72*3600)
+//                        .setStartLocation(vehicleMap.get(keyTemp))
+//                        .setEarliestStart(99000)
+//                        .setReturnToDepot(false)
+//                        .setType(messengerType)
+//                        .build();
+//
+//                    problemBuilder.addVehicle(vehicle);
+//
+//                }
+            }
+        }
+
+
+
+
+//        for(Object keyTemp : vehicleMap.keySet()) {
+//            for (int i = 0; i < 10; i++) {
+//                VehicleType messengerTypeAir = VehicleTypeImpl.Builder.newInstance("Air")
+//                    .addCapacityDimension(0, 1000000000)
+//                    .setMaxVelocity(250)
+//                    // .setCostPerServiceTime(0)
+//                    .setCostPerDistance(2000000)
+//                    //     .setFixedCost(vehicleFixedCost(Double.parseDouble(tokens[2]),Double.parseDouble(tokens[3])))
+//                    //     .setCostPerTransportTime(vehiclePerTimeCost(Integer.parseInt(tokens[7]),Integer.parseInt(tokens[8]),Integer.parseInt(tokens[9]),Integer.parseInt(tokens[10]),Integer.parseInt(tokens[11]),Integer.parseInt(tokens[12])))
+//                    //    .setCostPerWaitingTime(0)
+//                    .build();
+//
+//                VehicleImpl vehicleAir = VehicleImpl.Builder.newInstance(i + "-" + keyTemp.toString() + "-Air")
+//                    //  .setLatestArrival(72*3600)
+//                    .setStartLocation(vehicleMap.get(keyTemp))
+//                    .setReturnToDepot(false)
+//                    .setType(messengerTypeAir)
+//                    .build();
+//
+//                problemBuilder.addVehicle(vehicleAir);
+//            }
+//        }
+
+
+//        BufferedReader reader = new BufferedReader(new FileReader(new File("/Users/megha.bhardwaj/jsprit/jsprit-examples/air_fleet_master.csv")));
+//        String line;
+//        boolean firstLine = true;
+//        while ((line = reader.readLine()) != null) {
+//            if (firstLine) {
+//                firstLine = false;
+//                continue;
+//            }
+//            String[] tokens = line.split(",");
+//            //build your vehicle
+//            VehicleType messengerType = VehicleTypeImpl.Builder.newInstance(tokens[4])
+//                .addCapacityDimension(0, Integer.parseInt(tokens[5]))
+//              //  .setProfile(tokens[4])
+//      //          .setCostPerDistance(Double.parseDouble(tokens[6]))
+//////                .setFixedCost(Integer.parseInt(tokens[6]))
+//////                .setMaxVelocity(Double.parseDouble(tokens[10]))
+//                .build();
+//            //Integer.parseInt(tokens[6])
+//        //    VehicleType messengerCostType = VehicleTypeImpl.VehicleCostParams.newInstance();
+//
+//            VehicleImpl vehicle = VehicleImpl.Builder.newInstance(tokens[1])
+//               // .setEarliestStart(Double.parseDouble(tokens[6]))
+//                .setLatestArrival(48*3600)
+//                .setStartLocation(Location.Builder.newInstance().setCoordinate(Coordinate.newInstance(Double.parseDouble(tokens[2]), Double.parseDouble(tokens[3]))).build())
+//                .setReturnToDepot(false)
+//                .setType(messengerType)
+////                .setEarliestStart(Double.parseDouble(tokens[6]))
+//                .build();
+//            problemBuilder.addVehicle(vehicle);
+//        }
+//       reader.close();
+    }
+
+    public static double vehicleFixedCost(double tollFactor, double extFactor){
+        return tollFactor+extFactor;
+    }
+
+//    public static Integer vehiclePerTimeCost (Integer containerFactor, Integer vehicleCost, Integer interest, Integer loanPeriod, Integer amc, Integer insurance){
+//
+//        return containerFactor*vehicleCost*(1+interest)^(loanPeriod)*((12/10)/speed)/(loanPeriod*365)) * (1+(amc/10)+(insurance/10));
+//    }
+
+    public static Integer vehiclePerDistCost(Integer desielPrice, Integer milage, Integer speed, Integer driverCost, Integer kmPerTyre, Integer costOfTyre, Integer noOfTyre, Integer repairCharge, Integer containerFactor, Integer vehicleCost, Integer interest, Integer loanPeriod, Integer amc, Integer insurance){
+        return (desielPrice/milage) + (((12/10)*driverCost)/(speed*(36/10))) + ((costOfTyre*noOfTyre)/kmPerTyre) +repairCharge +
+        containerFactor*vehicleCost*((1+interest)^(loanPeriod))*(((12/10)/speed)/(loanPeriod*365)) * (1+(amc/10)+(insurance/10));
     }
 
 }

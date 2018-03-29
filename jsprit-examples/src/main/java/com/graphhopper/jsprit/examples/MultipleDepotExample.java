@@ -52,7 +52,7 @@ public class MultipleDepotExample {
         /*
          * Read cordeau-instance p01, BUT only its services without any vehicles
 		 */
-        new VrpXMLReader(vrpBuilder).read("input/vrp_cordeau_01.xml");
+        new VrpXMLReader(vrpBuilder).read("/Users/megha.bhardwaj/jsprit/jsprit-examples/input/vrp_cordeau_01.xml");
 
 		/*
          * add vehicles with its depots
